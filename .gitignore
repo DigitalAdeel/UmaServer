@@ -1,0 +1,49 @@
+# === Datos PERSONALES de cuenta (NO subir: viewer_id, steam_session_ticket, tokens) ===
+account_state.mp
+account_state.mp.tmp
+account.db
+account.db-shm
+account.db-wal
+seeds/
+capture/
+live_requests/
+REDIRECT
+
+# === Archivos del juego (Cygames, copyright) ===
+**/libnative.dll
+**/libnative_orig.dll
+**/UnityPlayer*.dll
+*.mdb
+
+# === Binarios compilados / build ===
+*.dll
+*.exe
+*.obj
+*.exp
+*.lib
+src/UmaProxy/libnative.dll
+src/UmaServer/bin/
+src/UmaServer/obj/
+
+# === Terceros / grandes (se descargan aparte) ===
+tools/minhook/
+tools/hachimi/
+tools/hachimi_ref/
+tools/BE759/
+tools/BE759_pkg/
+tools/*.zip
+
+# === Artefactos de prueba / logs ===
+*.log
+li.bin
+pyli.bin
+r10.bin
+req10.bin
+resp10.bin
+to_inject.json
+__pycache__/
+*.pyc
+
+# volcados de prueba en raiz (datos personales)
+/*.bin
+li_resp.bin

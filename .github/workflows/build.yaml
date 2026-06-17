@@ -1,0 +1,62 @@
+name: Build UmaProxy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone MinHook
+        run: git clone https://github.com/TsudaKageyu/minhook tools/minhook
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install pefile
+        run: pip install pefile
+
+      - name: Download game DLLs
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: game-dlls
+          path: C:\uma
+
+      - name: Generate exports.h
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "src\UmaProxy"
+          $dumpbin = & dumpbin /EXPORTS "C:\uma\libnative.dll"
+          $lines = $dumpbin | Select-String '^\s+\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\S+)'
+          $lines | ForEach-Object {
+            $name = $_.Matches[0].Groups[1].Value
+            "#pragma comment(linker, `"/export:$name=libnative_orig.$name`")"
+          } | Set-Content src\UmaProxy\exports.h
+          Write-Host "Exports: $((Get-Content src\UmaProxy\exports.h).Count)"
+
+      - name: Find and patch curl RVA
+        shell: pwsh
+        run: |
+          $output = python tools/find_curl_setopt.py C:\uma\UnityPlayer.dll
+          Write-Host "Script output: $output"
+          $rva = ($output | Select-String '0x[0-9A-Fa-f]+').Matches[0].Value
+          Write-Host "RVA: $rva"
+          $content = Get-Content src\UmaProxy\dllmain.cpp -Raw
+          $content = $content -replace '#define CURL_SETOPT_RVA 0x[0-9A-Fa-f]+', "#define CURL_SETOPT_RVA $rva"
+          Set-Content src\UmaProxy\dllmain.cpp $content
+
+      - name: Build
+        working-directory: src\UmaProxy
+        run: build.cmd
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: libnative-proxy
+          path: src\UmaProxy\libnative.dll
